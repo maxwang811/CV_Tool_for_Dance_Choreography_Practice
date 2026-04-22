@@ -1,17 +1,16 @@
 decisions_ref: docs/project_decisions.md
 
-# Stage A: generic human pose from scratch.
-# Mix: 70% COCO, 30% CrowdPose.
+# Single training stage: pose estimation from scratch on AIST++ 2D keypoints
+# paired with frames extracted from data/raw_videos/. No COCO, no CrowdPose,
+# no pretrained weights (see docs/project_decisions.md sections 1 and 6).
 
-stage: A_generic
+stage: aist_only
 data_config: configs/data/pose_train.yaml
 model_config: configs/model/simple_baseline.yaml   # switch to hrnet_w32.yaml for the final run
-output_dir: data/processed/stage_A
+output_dir: data/processed/train
 
 dataset_mix:
-  coco: 0.7
-  crowdpose: 0.3
-  aistpp: 0.0
+  aistpp: 1.0
 
 epochs: 150
 batch_size: 64

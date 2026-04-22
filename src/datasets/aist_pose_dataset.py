@@ -1,4 +1,4 @@
-"""AIST++ pose dataset (same internal JSONL schema as COCO/CrowdPose)."""
+"""AIST++ pose dataset (uses the shared internal JSONL schema)."""
 from __future__ import annotations
 
 from .coco_pose_dataset import PoseJsonlDataset

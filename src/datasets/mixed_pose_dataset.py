@@ -1,5 +1,12 @@
-"""Mixed-dataset sampler that draws from COCO / CrowdPose / AIST++ / custom
-with configurable ratios (e.g. 70/30/0 for Stage A, 20/20/60 for Stage B).
+"""Mixed-dataset sampler.
+
+After the AIST-only refactor (see docs/project_decisions.md section 6) the
+only supervised training source is AIST++ labels paired with frames from
+``data/raw_videos/``; ``custom_dance_val`` may be present for evaluation.
+This class stays generic enough to support additional sources in the
+future, but :func:`src.train.train_pose._require_aistpp_only` rejects any
+training config whose ``dataset_mix`` enables anything other than
+``aistpp``.
 """
 from __future__ import annotations
 
@@ -122,8 +129,9 @@ def build_mixed_from_configs(
         sources.append((name, ds, float(w)))
     if not sources:
         raise RuntimeError(
-            "No pose-dataset sources were found on disk. Convert COCO/CrowdPose/AIST++ "
-            "first (see src/data/convert_*.py) or point configs/data/pose_train.yaml "
-            "at the right annotation files."
+            "No pose-dataset sources were found on disk. Run "
+            "`python -m scripts.prepare_aist_training_data` to build "
+            "data/labels/aistpp/internal_train.jsonl and internal_val.jsonl "
+            "from data/raw_videos/ + AIST++ 2D keypoints."
         )
     return MixedPoseDataset(sources, epoch_size=epoch_size, seed=seed)

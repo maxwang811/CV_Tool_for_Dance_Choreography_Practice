@@ -94,11 +94,11 @@ def convert_video(
 
     T = kps.shape[0]
     frames_dir = Path(frames_dir)
+    has_conf = kps.shape[2] == 3
     for t in range(0, T, max(1, int(frame_stride))):
         kp_t = kps[t]
         # reorder to COCO-17
         kp_t = kp_t[list(mapping)]
-        # mark joints inside the frame as visible (v=2); those outside as not-annotated (v=0)
         xy = kp_t[:, :2].astype(np.float32)
         if image_width and image_height:
             inside = (
@@ -107,8 +107,16 @@ def convert_video(
             )
         else:
             inside = np.ones(17, dtype=bool)
-        v = np.where(inside, 2, 0).astype(np.float32)
-        if int(v.sum() > 0) < 8:
+        if has_conf:
+            # AIST++ ships per-joint detector confidence as the third channel.
+            # Treat joints below 0.2 as unannotated (v=0) even if they fall
+            # inside the frame.
+            conf = kp_t[:, 2].astype(np.float32)
+            visible = inside & (conf > 0.2)
+        else:
+            visible = inside
+        v = np.where(visible, 2, 0).astype(np.float32)
+        if int((v > 0).sum()) < 8:
             continue
         kps_xyv = np.concatenate([xy, v[:, None]], axis=-1).tolist()
 

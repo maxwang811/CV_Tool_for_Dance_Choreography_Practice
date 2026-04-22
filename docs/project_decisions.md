@@ -48,11 +48,21 @@ training checkpoints saved under `data/processed/checkpoints/`.
 
 ## 6. Data policy
 
-- `data/raw_urls/*.csv`: download lists for unlabeled dance video (AIST).
-- Supervised pose labels come only from COCO, CrowdPose, and AIST++.
+- `data/raw_urls/*.csv`: download lists for the AIST dance videos that
+  populate `data/raw_videos/`.
+- Supervised pose labels come ONLY from AIST++ 2D keypoints paired with
+  those `data/raw_videos/` clips. COCO and CrowdPose are not used.
+- The AIST++ per-video 2D keypoint files must be placed under
+  `data/labels/aistpp/keypoints2d_raw/<video_stem>.{pkl,npy}`; the
+  `scripts/prepare_aist_training_data.py` pipeline is the ONLY supported
+  way to build `data/labels/aistpp/internal_train.jsonl` and
+  `internal_val.jsonl`.
 - Our own paired benchmark/imitation videos are for downstream evaluation
-  and calibration, NOT for supervised pose-label training (unless explicitly
-  hand-annotated into `data/labels/custom_dance_val/`).
+  and calibration, NOT for supervised pose-label training (unless
+  explicitly hand-annotated into `data/labels/custom_dance_val/`).
+
+Revision (2026-04-22): narrowed supervised-label policy to AIST++ only,
+following the decision to train solely on `data/raw_videos/`.
 
 ## 7. Pipeline order (never skip forward)
 
@@ -61,10 +71,11 @@ training checkpoints saved under `data/processed/checkpoints/`.
 3. Pilot downloads + ffprobe integrity.
 4. MVP subset curation.
 5. Paired benchmark/imitation manifest.
-6. Label conversion (COCO / CrowdPose / AIST++).
+6. Label conversion (AIST++ 2D keypoints only) via
+   `scripts/prepare_aist_training_data.py`.
 7. Simple Baseline model — prove the training loop.
 8. HRNet-W32 — final model.
-9. Staged training A -> B -> (optional) C.
+9. Single-stage training on AIST++ labels from `data/raw_videos/`.
 10. Motion-based video inference.
 11. Temporal smoothing.
 12. Normalization -> features -> DTW -> score -> feedback.
@@ -74,7 +85,7 @@ training checkpoints saved under `data/processed/checkpoints/`.
 
 - No multi-person pose.
 - No moving-camera clips.
-- No training on raw unlabeled CSV videos without pseudo-labels.
+- No training on raw unlabeled videos (no pseudo-labels, no self-training).
 - No transformer as the first model.
 - No UI before CLI pipeline works.
 - No single "black-box" score without per-part / per-window diagnostics.

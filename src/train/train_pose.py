@@ -1,8 +1,12 @@
-"""Staged pose training CLI.
+"""Pose training CLI.
+
+Trains from scratch on AIST++ 2D keypoints paired with data/raw_videos/.
+See docs/project_decisions.md sections 1 and 6: no pretrained weights, and
+AIST++ is the only allowed supervised label source.
 
 Usage::
 
-    python -m src.train.train_pose --train configs/train/stage1_generic.yaml
+    python -m src.train.train_pose --train configs/train/train.yaml
 """
 from __future__ import annotations
 
@@ -23,8 +27,8 @@ from src.utils.seed import seed_everything
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Train a pose model from scratch. See docs/project_decisions.md.")
-    p.add_argument("--train", required=True, help="configs/train/stage*.yaml")
+    p = argparse.ArgumentParser(description="Train a pose model from scratch on AIST++ labels. See docs/project_decisions.md.")
+    p.add_argument("--train", required=True, help="configs/train/train.yaml")
     p.add_argument("--model", default=None, help="override model config path")
     p.add_argument("--max-items-per-source", type=int, default=None, help="debug: cap per-source dataset size")
     p.add_argument("--epoch-size", type=int, default=None, help="override virtual epoch size")
@@ -40,12 +44,32 @@ def _require_no_external_weights(model_cfg: Dict) -> None:
         )
 
 
+_ALLOWED_TRAIN_SOURCES = {"aistpp"}
+
+
+def _require_aistpp_only(train_cfg: Dict) -> None:
+    mix = train_cfg.get("dataset_mix") or {}
+    bad = [k for k, w in mix.items() if float(w) > 0 and k not in _ALLOWED_TRAIN_SOURCES]
+    if bad:
+        raise SystemExit(
+            f"Refusing to train: only AIST++ labels paired with data/raw_videos/ are allowed "
+            f"as a supervised source (docs/project_decisions.md section 6). "
+            f"Got extra sources with non-zero weight: {bad}."
+        )
+    if float(mix.get("aistpp", 0)) <= 0:
+        raise SystemExit(
+            "Refusing to train: dataset_mix.aistpp must be > 0. "
+            "docs/project_decisions.md section 6 restricts supervised labels to AIST++."
+        )
+
+
 def main() -> None:
     args = _build_parser().parse_args()
     train_cfg = load_yaml(args.train)
     data_cfg = load_yaml(train_cfg["data_config"])
     model_cfg = load_yaml(args.model or train_cfg["model_config"])
     _require_no_external_weights(model_cfg)
+    _require_aistpp_only(train_cfg)
 
     seed_everything(42)
 

@@ -1,7 +1,9 @@
 decisions_ref: docs/project_decisions.md
 
 # Unified pose-training data config.
-# All sources are converted into the internal schema (see src/data/convert_*.py).
+# Training uses ONLY AIST++ 2D keypoints paired with data/raw_videos/.
+# COCO and CrowdPose are intentionally disabled (see docs/project_decisions.md
+# section 6). custom_dance_val is kept for optional hand-labeled evaluation.
 
 input_size: [256, 192]      # [H, W]
 heatmap_size: [64, 48]      # [H, W]
@@ -9,18 +11,12 @@ sigma: 2.0
 
 datasets:
   coco:
-    enabled: true
-    images_dir: data/labels/coco/images
-    annotations: data/labels/coco/internal_train.jsonl
-    val_annotations: data/labels/coco/internal_val.jsonl
+    enabled: false
   crowdpose:
-    enabled: true
-    images_dir: data/labels/crowdpose/images
-    annotations: data/labels/crowdpose/internal_train.jsonl
-    val_annotations: data/labels/crowdpose/internal_val.jsonl
+    enabled: false
   aistpp:
     enabled: true
-    images_dir: data/labels/aistpp/images
+    images_dir: data/raw_frames/aistpp
     annotations: data/labels/aistpp/internal_train.jsonl
     val_annotations: data/labels/aistpp/internal_val.jsonl
     frame_stride: 8          # sample every 8th frame (Phase 5.3)
@@ -28,6 +24,7 @@ datasets:
     enabled: true
     images_dir: data/labels/custom_dance_val/images
     annotations: data/labels/custom_dance_val/internal_val.jsonl
+    val_annotations: data/labels/custom_dance_val/internal_val.jsonl
 
 augmentations:
   random_scale: [0.75, 1.25]

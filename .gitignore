@@ -19,6 +19,8 @@ data/reports/*
 !data/reports/.gitkeep
 data/labels/*
 !data/labels/.gitkeep
+data/keypoints2d/*
+!data/keypoints2d/.gitkeep
 data/manifests/*.parquet
 data/manifests/*.jsonl
 

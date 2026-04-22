@@ -1,8 +1,11 @@
 """Top-down pose dataset reading our internal JSONL format.
 
-The same class handles COCO, CrowdPose and AIST++ because all three are
-converted to the same internal schema (see ``src/datasets/common.py`` and
-``src/data/convert_*.py``).
+The ``coco_`` prefix is historical: this file now only powers AIST++
+training (the supervised source allowed by
+``docs/project_decisions.md`` section 6). The internal schema is defined
+in ``src/datasets/common.py``; rows are produced by
+``src/data/convert_aistpp.py`` via
+``scripts/prepare_aist_training_data.py``.
 """
 from __future__ import annotations
 

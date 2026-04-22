@@ -11,13 +11,12 @@ manifest_out: data/manifests/raw_url_manifest.parquet
 # We DO NOT fail on rows that do not match. Missing fields -> null.
 filename_regex: '^g(?P<genre>[A-Z0-9]+)_s(?P<situation>[A-Z0-9]+)_c(?P<camera>\d+)_d(?P<dancer>\d+)_m(?P<music>[A-Z0-9]+)_ch(?P<chore>\d+)\.mp4$'
 
-# Download policy (Phase 2.4). Pilot-only first.
+# Download policy (Phase 2.4). Filter-based: download all rows matching the filter.
 download:
-  pilot_n: 80
-  rng_seed: 123
   out_dir: data/raw_videos
   timeout_sec: 60
   max_retries: 3
   head_check_sample: 20
-  prefer:
-    - cameras: ['01']     # prefer fixed camera 01 if known
+  filter:
+    cameras: ['01']
+    situations: ['FM', 'BM']
