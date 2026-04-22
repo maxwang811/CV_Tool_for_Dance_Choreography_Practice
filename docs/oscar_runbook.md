@@ -26,15 +26,33 @@ git clone <your repo URL> CV_Tool_for_Dance_Choreography_Practice
 cd CV_Tool_for_Dance_Choreography_Practice
 ```
 
-Then upload the large inputs from your laptop (run these FROM your laptop):
+Then upload the large inputs from your laptop. The helper script handles three
+things you'd otherwise hit by hand: it pre-creates the remote directories,
+multiplexes SSH so you Duo-2FA only once, and uses `--partial` so a dropped
+transfer resumes on re-run.
 
 ```bash
-# raw videos
-rsync -av --progress data/raw_videos/ \
+# from the repo root on your laptop
+bash scripts/push_to_oscar.sh
+```
+
+Override the defaults (user `mwang264`, host `ssh.ccv.brown.edu`, remote root
+`~/scratch/projects/CV_Tool_for_Dance_Choreography_Practice`) via env vars if
+needed, e.g. `OSCAR_USER=myuser bash scripts/push_to_oscar.sh`.
+
+If you'd rather run rsync directly, first create the remote parents over SSH,
+then rsync (Apple's rsync 2.6.9 does not support `--mkpath`, which is why the
+bare `rsync -av --mkpath ...` form fails on macOS):
+
+```bash
+ssh <user>@ssh.ccv.brown.edu \
+    "mkdir -p ~/scratch/projects/CV_Tool_for_Dance_Choreography_Practice/data/raw_videos \
+              ~/scratch/projects/CV_Tool_for_Dance_Choreography_Practice/data/labels/aistpp/keypoints2d_raw"
+
+rsync -av --progress --partial data/raw_videos/ \
     <user>@ssh.ccv.brown.edu:~/scratch/projects/CV_Tool_for_Dance_Choreography_Practice/data/raw_videos/
 
-# AIST++ 2D keypoints
-rsync -av --progress data/labels/aistpp/keypoints2d_raw/ \
+rsync -av --progress --partial data/labels/aistpp/keypoints2d_raw/ \
     <user>@ssh.ccv.brown.edu:~/scratch/projects/CV_Tool_for_Dance_Choreography_Practice/data/labels/aistpp/keypoints2d_raw/
 ```
 
