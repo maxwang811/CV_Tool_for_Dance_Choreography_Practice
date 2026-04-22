@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-ANACONDA_MODULE="${ANACONDA_MODULE:-anaconda/2023.09-0-7nso27y}"
+ANACONDA_MODULE="${ANACONDA_MODULE:-anaconda3/2023.09-0-aqbc}"
 ENV_NAME="${ENV_NAME:-dance-cv}"
 PY_VER="${PY_VER:-3.11}"
 
@@ -26,14 +26,17 @@ fi
 module purge
 module load "${ANACONDA_MODULE}"
 
+# Make `conda activate` work inside this non-interactive shell.
+# shellcheck disable=SC1091
+source "$(conda info --base)/etc/profile.d/conda.sh"
+
 if conda env list | awk '{print $1}' | grep -qx "${ENV_NAME}"; then
     echo "env '${ENV_NAME}' already exists; reusing it."
 else
     conda create -y -n "${ENV_NAME}" "python=${PY_VER}"
 fi
 
-# shellcheck disable=SC1091
-source activate "${ENV_NAME}"
+conda activate "${ENV_NAME}"
 
 python -m pip install --upgrade pip
 
