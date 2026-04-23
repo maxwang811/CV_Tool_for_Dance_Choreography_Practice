@@ -1,9 +1,0 @@
-## SLURM PROLOG ###############################################################
-##    Job ID : 1836115
-##  Job Name : cv_dance_train
-##  Nodelist : gpu2105
-##      CPUs : 1
-##  Mem/Node : 32768 MB
-## Directory : /oscar/scratch/mwang264/projects/CV_Tool_for_Dance_Choreography_Practice
-##   Job Started : Wed Apr 22 07:12:00 PM EDT 2026
-###############################################################################

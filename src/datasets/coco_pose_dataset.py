@@ -24,6 +24,47 @@ from src.datasets.common import (
 )
 from src.utils.io import read_jsonl
 
+# region agent log
+# --- DEBUG INSTRUMENTATION (session 310455) -------------------------------
+# Writes one NDJSON line to stderr (captured by SLURM .err on Oscar) and
+# best-effort-appends to the local debug log. Safe to leave in; removed after
+# verification.
+import json as _dbg_json
+import os as _dbg_os
+import sys as _dbg_sys
+import time as _dbg_time
+
+_DBG_SESSION_ID_310455 = "310455"
+_DBG_LOG_PATH_310455 = (
+    "/Users/mohanwang/Desktop/Projects/CV_Tool_for_Dance_Choreography_Practice/"
+    ".cursor/debug-310455.log"
+)
+_DBG_CONFIG_LOGGED_310455 = False
+
+
+def _debug_log_310455(location: str, message: str, data: dict, hypothesis_id: str = "") -> None:
+    payload = {
+        "sessionId": _DBG_SESSION_ID_310455,
+        "runId": "pre-fix",
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "pid": _dbg_os.getpid(),
+        "timestamp": int(_dbg_time.time() * 1000),
+    }
+    line = "[DEBUG_310455] " + _dbg_json.dumps(payload, default=str)
+    try:
+        print(line, file=_dbg_sys.stderr, flush=True)
+    except Exception:
+        pass
+    try:
+        with open(_DBG_LOG_PATH_310455, "a") as _fh:
+            _fh.write(_dbg_json.dumps(payload, default=str) + "\n")
+    except Exception:
+        pass
+# endregion
+
 
 # ---------------------------------------------------------------------------
 # Affine transforms (top-down convention, bbox -> fixed input).
@@ -118,6 +159,41 @@ def gaussian_heatmap(
         g_y_lo = max(0, -ul[1]); g_y_hi = min(br[1], H) - ul[1]
         img_x_lo = max(0, ul[0]); img_x_hi = min(br[0], W)
         img_y_lo = max(0, ul[1]); img_y_hi = min(br[1], H)
+        # region agent log
+        _src_shape = (g_y_hi - g_y_lo, g_x_hi - g_x_lo)
+        _dst_shape = (img_y_hi - img_y_lo, img_x_hi - img_x_lo)
+        _g_clipped_src = g[g_y_lo:g_y_hi, g_x_lo:g_x_hi].shape
+        if (
+            _src_shape != _dst_shape
+            or _g_clipped_src != _dst_shape
+        ):
+            _debug_log_310455(
+                location="coco_pose_dataset.py:121",
+                message="heatmap slice shape mismatch about to crash",
+                data={
+                    "j": int(j),
+                    "mu_x": float(mu_x),
+                    "mu_y": float(mu_y),
+                    "ul": [int(ul[0]), int(ul[1])],
+                    "br": [int(br[0]), int(br[1])],
+                    "H": int(H), "W": int(W),
+                    "sigma": float(sigma),
+                    "tmp_size": float(tmp_size),
+                    "size": int(size),
+                    "g_shape": list(g.shape),
+                    "g_x_lo": int(g_x_lo), "g_x_hi": int(g_x_hi),
+                    "g_y_lo": int(g_y_lo), "g_y_hi": int(g_y_hi),
+                    "img_x_lo": int(img_x_lo), "img_x_hi": int(img_x_hi),
+                    "img_y_lo": int(img_y_lo), "img_y_hi": int(img_y_hi),
+                    "computed_src_shape": list(_src_shape),
+                    "actual_src_shape": list(_g_clipped_src),
+                    "dst_shape": list(_dst_shape),
+                    "joints_xy_row": [float(joints_xy[j, 0]), float(joints_xy[j, 1])],
+                    "target_visibility_j": float(target_visibility[j]),
+                },
+                hypothesis_id="A_B_C_D_E",
+            )
+        # endregion
         heatmaps[j, img_y_lo:img_y_hi, img_x_lo:img_x_hi] = g[g_y_lo:g_y_hi, g_x_lo:g_x_hi]
     return heatmaps, weights
 
@@ -313,7 +389,47 @@ class PoseJsonlDataset:
                 kps_hm[j, 1] = xy[1] * fy
                 vis[j] = 1.0
 
-        heatmaps, weights = gaussian_heatmap(kps_hm, vis, self.heatmap_size, sigma=self.sigma)
+        # region agent log
+        global _DBG_CONFIG_LOGGED_310455
+        if not _DBG_CONFIG_LOGGED_310455:
+            _DBG_CONFIG_LOGGED_310455 = True
+            _debug_log_310455(
+                location="coco_pose_dataset.py:316 __getitem__",
+                message="dataset config snapshot (first __getitem__ per worker)",
+                data={
+                    "self.sigma": float(self.sigma),
+                    "self.heatmap_size": list(self.heatmap_size),
+                    "self.input_size": list(self.input_size),
+                    "hm_h": int(hm_h), "hm_w": int(hm_w),
+                    "fx": float(fx), "fy": float(fy),
+                    "is_train": bool(self.is_train),
+                    "num_records": int(len(self.records)),
+                },
+                hypothesis_id="A_D",
+            )
+        try:
+            heatmaps, weights = gaussian_heatmap(kps_hm, vis, self.heatmap_size, sigma=self.sigma)
+        except ValueError:
+            _debug_log_310455(
+                location="coco_pose_dataset.py:316 __getitem__",
+                message="gaussian_heatmap raised ValueError; dumping sample context",
+                data={
+                    "image_path": str(rec.get("image_path")),
+                    "idx": int(idx),
+                    "kps_hm": kps_hm.tolist(),
+                    "vis": vis.tolist(),
+                    "center": center.tolist(),
+                    "scale": scale.tolist(),
+                    "scale_mul": float(scale_mul),
+                    "rot_deg": float(rot_deg),
+                    "heatmap_size": list(self.heatmap_size),
+                    "input_size": list(self.input_size),
+                    "sigma": float(self.sigma),
+                },
+                hypothesis_id="A_B_C_D_E",
+            )
+            raise
+        # endregion
 
         # Normalize image to [0, 1] float with channel-first.
         img_chw = (crop.astype(np.float32) / 255.0).transpose(2, 0, 1)
