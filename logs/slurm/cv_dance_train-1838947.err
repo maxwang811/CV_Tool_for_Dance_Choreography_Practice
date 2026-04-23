@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/oscar/scratch/mwang264/projects/CV_Tool_for_Dance_Choreography_Practice/src/train/train_pose.py", line 18, in <module>
+    from src.train.engine import (
+ModuleNotFoundError: No module named 'src.train.engine'
+srun: error: gpu3006: task 0: Exited with exit code 1
