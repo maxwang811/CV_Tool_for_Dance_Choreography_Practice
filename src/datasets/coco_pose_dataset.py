@@ -45,7 +45,7 @@ _DBG_CONFIG_LOGGED_310455 = False
 def _debug_log_310455(location: str, message: str, data: dict, hypothesis_id: str = "") -> None:
     payload = {
         "sessionId": _DBG_SESSION_ID_310455,
-        "runId": "pre-fix",
+        "runId": "post-fix",
         "hypothesisId": hypothesis_id,
         "location": location,
         "message": message,
@@ -140,13 +140,22 @@ def gaussian_heatmap(
     heatmaps = np.zeros((J, H, W), dtype=np.float32)
     weights = target_visibility.astype(np.float32).copy()
     tmp_size = sigma * 3
+    int_tmp = int(tmp_size)
     for j in range(J):
         if weights[j] <= 0:
             continue
         mu_x = joints_xy[j, 0]
         mu_y = joints_xy[j, 1]
-        ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
-        br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
+        # Round to the nearest integer pixel FIRST, then form the patch window
+        # with pure integer arithmetic. This guarantees `br - ul == size` and
+        # avoids float32 rounding asymmetry (e.g. mu_y = 29.0 - 1 ulp making
+        # `int(mu_y + tmp_size + 1)` round up by a pixel while
+        # `int(mu_y - tmp_size)` does not), which previously produced a
+        # destination slice one row taller/wider than `g`.
+        mu_x_i = int(round(float(mu_x)))
+        mu_y_i = int(round(float(mu_y)))
+        ul = [mu_x_i - int_tmp, mu_y_i - int_tmp]
+        br = [mu_x_i + int_tmp + 1, mu_y_i + int_tmp + 1]
         if ul[0] >= W or ul[1] >= H or br[0] < 0 or br[1] < 0:
             weights[j] = 0
             continue
